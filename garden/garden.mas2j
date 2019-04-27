@@ -13,7 +13,11 @@
 MAS garden {
 
     infrastructure: Centralised
-
+
+    environment: GardenEnv
+
     agents:
+        observer;
+
 }
 
