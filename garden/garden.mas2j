@@ -1,23 +1,15 @@
-/*
-    garden
-    ---------------------------
-
-    Jason Project File
-
-    This file defines the initial state of the MAS
-
-    Jason 
-    April 27, 2019 - 19:31:56
-*/
-
-MAS garden {
-
-    infrastructure: Centralised
+/*
+    garden
+    ---------------------------
+    Jason Project File
+    This file defines the initial state of the MAS
+    Jason 
+    April 27, 2019 - 19:31:56
+*/
 
+MAS garden {
+    infrastructure: Centralised
     environment: GardenEnv
-
-    agents:
+    agents:
         observer;
-
-}
-
+}
