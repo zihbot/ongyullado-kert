@@ -214,6 +214,7 @@ public class GardenEnv extends Environment {
 				discover(x,y-1);
 				discover(x+1,y);
 				discover(x,y+1);
+				addPercept(Literal.parseLiteral("fullyDiscovered(" + x + "," + y + ")"));
 			}
 		} catch (Exception e) {}
 		
