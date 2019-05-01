@@ -22,5 +22,5 @@
 		
 +!startPlanter : free(X,Y) 
 	<- .send(planter, tell, plant(X,Y));
-		-free(X,Y)[source(_)];
+		//-free(X,Y)[source(_)];
 		!start.

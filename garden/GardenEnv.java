@@ -113,7 +113,7 @@ public class GardenEnv extends Environment {
 		private GardenModel(){
 			super(GWidth, GHeight, 2); //2??	
 			
-			setAgPos(0, 0, 0);
+			//setAgPos(0, 0, 0);
 			setAgPos(1, 2, 1);
 			
 			//location of plants & weeds & fire --> fire covers plant that's under it
