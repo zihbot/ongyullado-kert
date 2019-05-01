@@ -5,9 +5,10 @@
 
 !start.
 /* Plans */
+
 +!start : needPlant 
-	<- !!startPlanter;
-		-needPlant[source(_)];
+	<- -needPlant[source(_)];
+		!startPlanter;
 		!start.
 		
 +!start : true <- !start.
@@ -15,8 +16,11 @@
 +!startPlanter : not free(X,Y) & not discovered(Z,W) 
 	<- ?pos(planter,M,N);
 		discover(M,N).
-	
--!startPlanter : free(X,Y) 
+
++!startPlanter : not free(Z,W) & discovered(X,Y) 
+	<- discover(X,Y).
+		
++!startPlanter : free(X,Y) 
 	<- .send(planter, tell, plant(X,Y));
 		-free(X,Y)[source(_)];
 		!start.
