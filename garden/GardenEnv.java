@@ -59,13 +59,7 @@ public class GardenEnv extends Environment {
 		plant.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
 				System.out.println("PLANT");
-				addPercept(Literal.parseLiteral("needPlant"));
-				/*try {
-				getEnvironmentInfraTier().getRuntimeServices().createAgent(
-					"planter",
-					"planter.asl",
-					null,null,null,null,null);
-				} catch (Exception x) {x.printStackTrace();}*/
+				addPercept(Literal.parseLiteral("needPlant"));				
 			}
 		});
 		JButton sprinkle = new JButton("Sprinkle");
@@ -88,8 +82,7 @@ public class GardenEnv extends Environment {
 	
 	void updatePercepts(){
 		clearPercepts();
-		clearPercepts("observer");
-		//"send" plants & weeds to observer --> belief
+		clearPercepts("observer");		
 		for(int i = 0; i < GWidth; i++){
 			for(int j = 0; j < GHeight; j++){
 				Location loc = new Location(i, j);
@@ -142,30 +135,10 @@ public class GardenEnv extends Environment {
 				break;			
 			case GardenEnv.WEED:
 				g.setColor(new Color(102,51,0));
-				drawString(g, x, y, defaultFont, "WEED");
-				//drawGardenObject(g, x, y, "WEED");
-				break;
-				/*
-			case GardenEnv.FIRE:
-				g.setColor(Color.red);
-				drawString(g, x, y, defaultFont, "FIRE");
-				//drawGardenObject(g, x, y, "FIRE");
-				break;
-				*/
+				drawString(g, x, y, defaultFont, "WEED");				
+				break;		
 			}
-		}				
-		/*
-		public void drawGardenObject(Graphics g, int x, int y, String text){
-			super.drawObstacle(g, x, y);
-			if(text.equals("FIRE")){
-				return;
-			}
-			else{
-				g.setColor(Color.white);			
-				drawString(g, x, y, defaultFont, text);
-			}				
-		}
-		*/
+		}						
 		@Override
 		public void drawAgent(Graphics g, int x, int y, Color c, int id) {
 			c = Color.blue;
