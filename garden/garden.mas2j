@@ -12,4 +12,6 @@ MAS garden {
     environment: GardenEnv
     agents:
         observer;
+        planter;
+
 }
