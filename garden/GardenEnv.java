@@ -15,6 +15,7 @@ import java.awt.event.ActionListener;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.*;
+import java.util.ArrayList;
 import javax.swing.*;
 
 public class GardenEnv extends Environment {	
@@ -28,6 +29,7 @@ public class GardenEnv extends Environment {
 	public static final int OBSERVER = 0; //observer agent id
 	public static final int PLANTER = 1; //planter agent id
 	public static final int WEEDERS = 2; //weeders agent id
+	public static final int SPRINKLER = 3; //sprinkler agent id
 	
 	public Timer timer;
 	private GardenModel model;
@@ -46,11 +48,11 @@ public class GardenEnv extends Environment {
 		model.setView(view);	
 		setup();		
 		timer = new Timer();
-		//every minute the observer searches for weed
+		//every 10 seconds the observer searches for weed
 		timer.scheduleAtFixedRate(new TimerTask(){
 			@Override
 			public void run(){
-				addPercept(Literal.parseLiteral("needWeedSearch"));	
+				addPercept(Literal.parseLiteral("needWeedSearch"));						
 			}
 		}, 10 * 1000, 10 * 1000);
         updatePercepts();
@@ -73,10 +75,11 @@ public class GardenEnv extends Environment {
 				addPercept(Literal.parseLiteral("needPlant"));				
 			}
 		});
-		JButton sprinkle = new JButton("Sprinkle");
+		JButton sprinkle = new JButton("Water");
 		sprinkle.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				System.out.println("SPRINKLE");					
+				System.out.println("WATERING");		
+				addPercept(Literal.parseLiteral("needWatering"));
 			}
 		});				
 		//TODO: temperature = getTemperature(); --> other method to periodically refresh the variable & text in the temperatureLabel
@@ -111,14 +114,16 @@ public class GardenEnv extends Environment {
 		addPercept(Literal.parseLiteral("pos(planter," + pp.x + "," + pp.y + ")"));
 		clearPercepts("planter");		
 		clearPercepts("weeders");		
+		clearPercepts("sprinkler");		
 	}
 	
 	class GardenModel extends GridWorldModel{
 		private GardenModel(){			
-			super(GWidth, GHeight, 3);			
+			super(GWidth, GHeight, 4);			
 			//setAgPos(0, 0, 0);
 			setAgPos(PLANTER, 2, 1);
 			setAgPos(WEEDERS, 3, 0);
+			setAgPos(SPRINKLER, 0, 0);
 			//initial location of plants & weeds & fire --> fire covers plant that's under it
 			add(PLANT, 0, 1);			
 			add(PLANT, 2, 1);
@@ -161,6 +166,9 @@ public class GardenEnv extends Environment {
 				case WEEDERS:
 					c = new Color(173,255,47);
 					break;
+				case SPRINKLER:
+					c = new Color(0,191,255);
+					break;
 				default:
 					draw = false;
 					break;					
@@ -201,6 +209,40 @@ public class GardenEnv extends Environment {
 				discover(x+1,y);
 				discover(x,y+1);
 				addPercept(Literal.parseLiteral("fullyDiscovered(" + x + "," + y + ")"));
+			}		
+			if(action.getFunctor().equals("searchPlants")){
+				searchPlants();			
+			}			
+			if(action.getFunctor().equals("watering")){	
+				Location loc = model.getAgPos(SPRINKLER);
+				if(loc.x == 0){
+					for(int i = 0; i < GWidth; i++){
+						for(int j = 0; j < GHeight; j++){
+							model.setAgPos(SPRINKLER, i, j);
+							try {
+								Thread.sleep(300);
+								} catch (Exception e) {}
+							if(model.hasObject(PLANT, i, j)){							
+								System.out.println("Watering plant on: (" + i + "," + j + ")");
+							}							
+						}
+					}
+					updatePercepts();
+				}
+				else{
+					for(int i = loc.x; i >= 0; i--){
+						for(int j = loc.y; j >= 0; j--){
+							model.setAgPos(SPRINKLER, i, j);
+							try {
+								Thread.sleep(300);
+								} catch (Exception e) {}
+							if(model.hasObject(PLANT, i, j)){							
+								System.out.println("Watering plant on: (" + i + "," + j + ")");
+							}							
+						}
+					}
+					updatePercepts();
+				}
 			}	
 			if(action.getFunctor().equals("searchWeed")){
 				searchWeed();
@@ -215,7 +257,10 @@ public class GardenEnv extends Environment {
 				//without this, the weeders would teleport
 				//the agent can step over other agents --> if planter steps down --> weeders will make it disappear!!
 				boolean finished = false;
-				while(!finished){					
+				while(!finished){	
+					try {
+							Thread.sleep(300);
+        					} catch (Exception e) {}
 					if(goalX == startX && goalY == startY){
 						finished = true;
 					}					
@@ -237,7 +282,7 @@ public class GardenEnv extends Environment {
 							model.setAgPos(WEEDERS, startX, startY);
 						}					
 					}
-				}										          
+				}									          
 			}  
 			if (action.getFunctor().equals("remove")) {
 				Location pp = model.getAgPos(WEEDERS);
@@ -258,8 +303,7 @@ public class GardenEnv extends Environment {
 		//model.isFree(x,y) to skip field on which an other agent stands
 		if(model.isFreeOfObstacle(x,y) && 
 			model.isFree(PLANT,x,y) &&
-			model.isFree(WEED,x,y)	&&
-			model.isFree(x,y))			
+			model.isFree(WEED,x,y))			
 			addPercept(Literal.parseLiteral("free(" + x + "," + y + ")"));
 		addPercept(Literal.parseLiteral("discovered(" + x + "," + y + ")"));
 	}		
@@ -268,14 +312,23 @@ public class GardenEnv extends Environment {
 		for(int i = 0; i < GWidth; i++){
 			for(int j = 0; j < GHeight; j++){
 				if(model.hasObject(WEED, i, j)){					
-					addPercept(Literal.parseLiteral("weedDiscovered(" + i + "," + j + ")"));	
-					System.out.println("x: " + i + " y: " + j);
+					addPercept(Literal.parseLiteral("weedDiscovered(" + i + "," + j + ")"));						
 					return;					
 				}
 			}
 		}	
 	}
 	
+	void searchPlants(){				
+		for(int i = 0; i < GWidth; i++){
+			for(int j = 0; j < GHeight; j++){
+				if(model.hasObject(PLANT, i, j)){									
+					addPercept(Literal.parseLiteral("hasPlant(" + i + "," + j + ")"));	
+					break;
+				}
+			}
+		}		
+	}	
 	
     /** Called before the end of MAS execution */
     @Override

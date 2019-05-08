@@ -14,5 +14,5 @@ MAS garden {
         observer;
         planter;
         weeders;
-
+        sprinkler;
 }

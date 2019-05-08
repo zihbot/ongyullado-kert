@@ -14,6 +14,10 @@
 	<- -needWeedSearch[source(_)]
 		!startWeeders;
 		!start.
++!start : needWatering 
+	<- -needWatering[source(_)];
+		!startSprinkler;		
+		!start.		
 		
 +!start : true <-  !start.
 
@@ -32,4 +36,10 @@
 	<- searchWeed.
 +!startWeeders : weedDiscovered(X, Y) 
 	<- .send(weeders, tell, remove(X,Y));
+		!start.
+		
++!startSprinkler : not hasPlant(X,Y) 
+	<- searchPlants.
++!startSprinkler : hasPlant(X,Y)
+	<- .send(sprinkler, tell, water(X,Y));		
 		!start.
