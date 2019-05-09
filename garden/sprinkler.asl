@@ -7,6 +7,6 @@
 	-water[source(_)].
 	
 +extinguish : true
-	<- extinguish;
-	-extinguish[source(_)].
-
+	<- extinguish;	
+	-extinguish[source(_)];
+	.send(observer, tell, extinguishFinished).

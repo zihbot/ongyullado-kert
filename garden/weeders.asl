@@ -7,4 +7,8 @@
 	<- goTo(X,Y);
 		remove;
 		-remove(X,Y)[source(_)].
+		
++clean : true
+	<- cleaning;
+	-clean[source(_)].
 

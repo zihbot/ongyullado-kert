@@ -54,8 +54,11 @@ public class GardenEnv extends Environment {
 		//every 15 seconds there is a 1/5 probability of new weed
 		timer.scheduleAtFixedRate(new TimerTask(){
 			@Override
-			public void run(){
-				addPercept(Literal.parseLiteral("needWeedSearch"));	
+			public void run(){	
+				//while model has BURNT object, weeders agent can't go back to its normal behaviour
+				if(!hasBurnt()){
+					addPercept(Literal.parseLiteral("needWeedSearch"));
+				}										
 				Random rand = new Random();
 				boolean val = rand.nextInt(5) == 0;
 				if(val){
@@ -140,7 +143,7 @@ public class GardenEnv extends Environment {
 			setAgPos(WEEDERS, 0, 0);
 			//Sprinkler has to start from (0,0)!
 			setAgPos(SPRINKLER, 0, 0);
-			//initial locations of plants & weeds & fire --> fire covers plant that's under it
+			//initial locations of plants
 			add(PLANT, 0, 1);			
 			add(PLANT, 2, 1);
 			add(PLANT, GWidth - 1, GHeight - 1);
@@ -158,8 +161,7 @@ public class GardenEnv extends Environment {
 			switch (object){
 			case GardenEnv.PLANT:
 				g.setColor(new Color(0,102,0));
-				drawString(g, x, y, defaultFont, "PLANT");
-				//drawAgent(g, x, y, Color.green, -1);
+				drawString(g, x, y, defaultFont, "PLANT");				
 				break;			
 			case GardenEnv.WEED:
 				g.setColor(new Color(102,51,0));
@@ -317,8 +319,6 @@ public class GardenEnv extends Environment {
 								} catch (Exception e) {}
 							if(model.hasObject(FIRE, i, j)){		
 								model.remove(FIRE, i, j);
-								/*model.remove(PLANT, i, j);
-								model.add(BURNT, i, j);*/
 								System.out.println("Extinguish fire at: (" + i + "," + j + ")");
 							}							
 						}
@@ -339,9 +339,42 @@ public class GardenEnv extends Environment {
 						}
 					}
 					updatePercepts();
-				}
+				}				
 			}
-			
+			if (action.getFunctor().equals("checkForFire")) {				
+				boolean hasFire = false;
+				for(int i = 0; i < GWidth; i++){
+					for(int j = 0; j < GHeight; j++){
+						if(model.hasObject(FIRE, i, j)){							
+							hasFire = true;
+							System.out.println("Not extinguished fire at: " + i + ", " + j);
+							addPercept(Literal.parseLiteral("needExtinguish"));							
+						}
+					}
+				}
+				if(!hasFire){
+					addPercept(Literal.parseLiteral("cleanAfterFire"));								
+				}
+				updatePercepts();      
+			}
+			if(action.getFunctor().equals("cleaning")){
+				//this comes after the sprinkler stepped on every field --> that results the weeders agent to disappear (hide)
+				//so instead of route finding, weeders go back to the start position, and steps on every field				
+				model.setAgPos(WEEDERS, 0, 0);
+				for(int i = 0; i < GWidth; i++){
+					for(int j = 0; j < GHeight; j++){
+						model.setAgPos(WEEDERS, i, j);
+						try {
+							Thread.sleep(300);
+							} catch (Exception e) {}
+						if(model.hasObject(BURNT, i, j)){		
+							model.remove(BURNT, i, j);
+							System.out.println("Remove burnt plant/weed from: (" + i + "," + j + ")");
+						}							
+					}
+				}
+				updatePercepts();				
+			}			
 		} catch (Exception e) {}
         try {
             Thread.sleep(200);
@@ -407,7 +440,7 @@ public class GardenEnv extends Environment {
 				success = true;				
 			}
 			else if(model.hasObject(WEED, x, y)){
-				model.remove(PLANT, x, y);				
+				model.remove(WEED, x, y);				
 				success = true;			
 			}							
 		}
@@ -415,7 +448,7 @@ public class GardenEnv extends Environment {
 			model.add(BURNT, x, y);
 			model.add(FIRE, x, y);			
 			System.out.println("Fire at: " + x + ", " + y);
-			addPercept(Literal.parseLiteral("needExtinguish"));
+			addPercept(Literal.parseLiteral("needExtinguish"));							
 		}
 		else{			
 			createFire();			
@@ -469,10 +502,28 @@ public class GardenEnv extends Environment {
 		Random rand = new Random();
 		//probability of spreading is 1/5
 		boolean val = rand.nextInt(5) == 0;
-		if(val){			
-			model.add(FIRE, x, y);
+		if(val){		
+			if(model.hasObject(PLANT, x, y)){
+				model.remove(PLANT, x, y);
+			}
+			else if(model.hasObject(WEED, x, y)){
+				model.remove(WEED, x, y);
+			}
+			model.add(BURNT, x, y);
+			model.add(FIRE, x, y);			
 			System.out.println("Fire spread to: " + x + ", " + y);
 		}
+	}
+	
+	boolean hasBurnt(){
+		for(int i = 0; i < GWidth; i++){
+			for(int j = 0; j < GHeight; j++){
+				if(model.hasObject(BURNT, i, j)){
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 	
     /** Called before the end of MAS execution */

@@ -10,7 +10,7 @@
 	<- -needPlant[source(_)];
 		!startPlanter;		
 		!start.
-+!start: needWeedSearch 
++!start: needWeedSearch
 	<- -needWeedSearch[source(_)];
 		!startWeeders;
 		!start.
@@ -22,8 +22,16 @@
 	<- -needExtinguish[source(_)];	
 	.send(sprinkler, tell, extinguish);
 	!start.	
++!start : cleanAfterFire 
+	<- -cleanAfterFire[source(_)];	
+	.send(weeders, tell, clean);
+	!start.	
 		
 +!start : true <-  !start.
+
++extinguishFinished : true
+	<- checkForFire;
+	-extinguishFinished[source(_)].	
 
 +!startPlanter : not free(X,Y) & not discovered(Z,W) 
 	<- ?pos(planter,M,N);
@@ -35,14 +43,15 @@
 +!startPlanter : free(X,Y) 
 	<- .send(planter, tell, plant(X,Y));
 		!start.	
-+!startWeeders: not weedDiscovered(X,Y) 
++!startWeeders: not weedDiscovered(X,Y)
 	<- searchWeed.
 +!startWeeders : weedDiscovered(X, Y) 
 	<- .send(weeders, tell, remove(X,Y));
 		!start.
 		
-+!startSprinkler : not hasPlant(X,Y) 
++!startSprinkler : not hasPlant(X,Y)
 	<- searchPlants.
 +!startSprinkler : hasPlant(X,Y)
 	<- .send(sprinkler, tell, water);		
-		!start.
+		!start.		
+		
