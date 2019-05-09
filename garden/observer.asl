@@ -11,13 +11,17 @@
 		!startPlanter;		
 		!start.
 +!start: needWeedSearch 
-	<- -needWeedSearch[source(_)]
+	<- -needWeedSearch[source(_)];
 		!startWeeders;
 		!start.
 +!start : needWatering 
 	<- -needWatering[source(_)];
 		!startSprinkler;		
-		!start.		
+		!start.	
++!start : needExtinguish 
+	<- -needExtinguish[source(_)];	
+	.send(sprinkler, tell, extinguish);
+	!start.	
 		
 +!start : true <-  !start.
 
@@ -30,7 +34,6 @@
 		
 +!startPlanter : free(X,Y) 
 	<- .send(planter, tell, plant(X,Y));
-		//-free(X,Y)[source(_)];
 		!start.	
 +!startWeeders: not weedDiscovered(X,Y) 
 	<- searchWeed.
@@ -41,5 +44,5 @@
 +!startSprinkler : not hasPlant(X,Y) 
 	<- searchPlants.
 +!startSprinkler : hasPlant(X,Y)
-	<- .send(sprinkler, tell, water(X,Y));		
+	<- .send(sprinkler, tell, water);		
 		!start.

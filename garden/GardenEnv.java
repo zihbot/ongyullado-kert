@@ -16,6 +16,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.*;
 import java.util.ArrayList;
+import java.util.Random;
 import javax.swing.*;
 
 public class GardenEnv extends Environment {	
@@ -24,7 +25,8 @@ public class GardenEnv extends Environment {
 	
 	public static final int PLANT = 8; //plant code in grid model
 	public static final int WEED = 16; //weed code in grid model
-	public static final int FIRE = 4; //fire code in grid model	
+	public static final int FIRE = 4; //fire code in grid model
+	public static final int BURNT = 32;
 	
 	public static final int OBSERVER = 0; //observer agent id
 	public static final int PLANTER = 1; //planter agent id
@@ -36,7 +38,7 @@ public class GardenEnv extends Environment {
 	private GardenView view;
 	private JFrame frame;	
 	private JLabel temperatureLabel;
-	private int temperature;
+	private int temperature;	
 	private Logger logger = Logger.getLogger("garden.mas2j."+GardenEnv.class.getName());
 
     /** Called before the MAS execution with the args informed in .mas2j */
@@ -48,37 +50,49 @@ public class GardenEnv extends Environment {
 		model.setView(view);	
 		setup();		
 		timer = new Timer();
-		//every 10 seconds the observer searches for weed
+		//every 15 seconds the observer searches for weed
+		//every 15 seconds there is a 1/5 probability of new weed
 		timer.scheduleAtFixedRate(new TimerTask(){
 			@Override
 			public void run(){
-				addPercept(Literal.parseLiteral("needWeedSearch"));						
+				addPercept(Literal.parseLiteral("needWeedSearch"));	
+				Random rand = new Random();
+				boolean val = rand.nextInt(5) == 0;
+				if(val){
+					createWeed();
+				}
 			}
-		}, 10 * 1000, 10 * 1000);
-        updatePercepts();
+		}, 15 * 1000, 15 * 1000);	
+		//every 10 seconds try to spread fire
+		timer.scheduleAtFixedRate(new TimerTask(){
+			@Override
+			public void run(){								
+				spreadFire();							
+			}
+		}, 10 * 1000, 10 * 1000);	
     }
 	private void setup(){		
 		frame = new JFrame("Garden controller");
 		frame.setPreferredSize(new Dimension(400, 200));
-		frame.setLayout(new GridLayout(2, 2, 10, 10));//rows, cols, hgap, vgap --> col ignored 
-		//TODO: button listeners
+		frame.setLayout(new GridLayout(2, 2, 10, 10));//rows, cols, hgap, vgap --> col ignored 		
 		JButton fire = new JButton("Fire");
 		fire.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				System.out.println("FIRE");
+				System.out.println("Fire button clicked");
+				createFire();				
 			}
 		});
 		JButton plant = new JButton("Plant");
 		plant.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				System.out.println("PLANT");
+				System.out.println("Plant button clicked");
 				addPercept(Literal.parseLiteral("needPlant"));				
 			}
 		});
 		JButton sprinkle = new JButton("Water");
 		sprinkle.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
-				System.out.println("WATERING");		
+				System.out.println("Water button clicked");		
 				addPercept(Literal.parseLiteral("needWatering"));
 			}
 		});				
@@ -121,17 +135,15 @@ public class GardenEnv extends Environment {
 		private GardenModel(){			
 			super(GWidth, GHeight, 4);			
 			//setAgPos(0, 0, 0);
-			setAgPos(PLANTER, 2, 1);
-			setAgPos(WEEDERS, 3, 0);
+			//initial locations of agents
+			setAgPos(PLANTER, 3, 2);
+			setAgPos(WEEDERS, 0, 0);
+			//Sprinkler has to start from (0,0)!
 			setAgPos(SPRINKLER, 0, 0);
-			//initial location of plants & weeds & fire --> fire covers plant that's under it
+			//initial locations of plants & weeds & fire --> fire covers plant that's under it
 			add(PLANT, 0, 1);			
 			add(PLANT, 2, 1);
 			add(PLANT, GWidth - 1, GHeight - 1);
-			add(WEED, 0, 0);
-			add(WEED, 4, 2);
-			add(FIRE, 1, 1);
-			add(FIRE, 1, 2);			
 		}
 	}	
 	class GardenView extends GridWorldView{
@@ -152,7 +164,11 @@ public class GardenEnv extends Environment {
 			case GardenEnv.WEED:
 				g.setColor(new Color(102,51,0));
 				drawString(g, x, y, defaultFont, "WEED");				
-				break;		
+				break;	
+			case GardenEnv.BURNT:
+				g.setColor(new Color(0,0,0));
+				drawString(g, x, y, defaultFont, "BURNT");				
+				break;	
 			}
 		}						
 		@Override
@@ -223,7 +239,7 @@ public class GardenEnv extends Environment {
 								Thread.sleep(300);
 								} catch (Exception e) {}
 							if(model.hasObject(PLANT, i, j)){							
-								System.out.println("Watering plant on: (" + i + "," + j + ")");
+								System.out.println("Watering plant at: (" + i + "," + j + ")");
 							}							
 						}
 					}
@@ -237,7 +253,7 @@ public class GardenEnv extends Environment {
 								Thread.sleep(300);
 								} catch (Exception e) {}
 							if(model.hasObject(PLANT, i, j)){							
-								System.out.println("Watering plant on: (" + i + "," + j + ")");
+								System.out.println("Watering plant at: (" + i + "," + j + ")");
 							}							
 						}
 					}
@@ -286,9 +302,46 @@ public class GardenEnv extends Environment {
 			}  
 			if (action.getFunctor().equals("remove")) {
 				Location pp = model.getAgPos(WEEDERS);
-				model.remove(WEED, pp.x, pp.y);       				
+				model.remove(WEED, pp.x, pp.y);      
+				System.out.println("Remove weed from: (" + pp.x + "," + pp.y + ")"); 				
 				updatePercepts();      
-			}			
+			}
+			if(action.getFunctor().equals("extinguish")){
+				Location loc = model.getAgPos(SPRINKLER);
+				if(loc.x == 0){
+					for(int i = 0; i < GWidth; i++){
+						for(int j = 0; j < GHeight; j++){
+							model.setAgPos(SPRINKLER, i, j);
+							try {
+								Thread.sleep(300);
+								} catch (Exception e) {}
+							if(model.hasObject(FIRE, i, j)){		
+								model.remove(FIRE, i, j);
+								/*model.remove(PLANT, i, j);
+								model.add(BURNT, i, j);*/
+								System.out.println("Extinguish fire at: (" + i + "," + j + ")");
+							}							
+						}
+					}
+					updatePercepts();
+				}
+				else{
+					for(int i = loc.x; i >= 0; i--){
+						for(int j = loc.y; j >= 0; j--){
+							model.setAgPos(SPRINKLER, i, j);
+							try {
+								Thread.sleep(300);
+								} catch (Exception e) {}
+							if(model.hasObject(FIRE, i, j)){
+								model.remove(FIRE, i, j);
+								System.out.println("Extinguish fire at: (" + i + "," + j + ")");
+							}							
+						}
+					}
+					updatePercepts();
+				}
+			}
+			
 		} catch (Exception e) {}
         try {
             Thread.sleep(200);
@@ -299,11 +352,11 @@ public class GardenEnv extends Environment {
     }
 	
 	void discover(int x, int y) {		
-		if(x<0 || y<0 || x>=GWidth || y>GHeight) return;	
-		//model.isFree(x,y) to skip field on which an other agent stands
+		if(x<0 || y<0 || x>=GWidth || y>GHeight) return;			
 		if(model.isFreeOfObstacle(x,y) && 
 			model.isFree(PLANT,x,y) &&
-			model.isFree(WEED,x,y))			
+			model.isFree(WEED,x,y) && 
+			model.isFree(BURNT, x, y))			
 			addPercept(Literal.parseLiteral("free(" + x + "," + y + ")"));
 		addPercept(Literal.parseLiteral("discovered(" + x + "," + y + ")"));
 	}		
@@ -329,6 +382,98 @@ public class GardenEnv extends Environment {
 			}
 		}		
 	}	
+	
+	void createWeed(){
+		Random rand = new Random();
+		int x = rand.nextInt(GWidth);
+		int y = rand.nextInt(GHeight);
+		if(model.hasObject(PLANT, x, y) || model.hasObject(WEED, x, y) || model.hasObject(FIRE, x, y) || model.hasObject(BURNT, x, y)){
+			createWeed();
+		}
+		else{
+			model.add(WEED, x, y);
+		}
+	}
+	
+	void createFire(){		
+		Random rand = new Random();
+		int x = rand.nextInt(GWidth);
+		int y = rand.nextInt(GHeight);
+		boolean success = false; 		
+		//extuinguished area can not burn again
+		if(!model.hasObject(FIRE, x, y) && !model.hasObject(BURNT, x, y)){								
+			if(model.hasObject(PLANT, x, y)){
+				model.remove(PLANT, x, y);				
+				success = true;				
+			}
+			else if(model.hasObject(WEED, x, y)){
+				model.remove(PLANT, x, y);				
+				success = true;			
+			}							
+		}
+		if(success){
+			model.add(BURNT, x, y);
+			model.add(FIRE, x, y);			
+			System.out.println("Fire at: " + x + ", " + y);
+			addPercept(Literal.parseLiteral("needExtinguish"));
+		}
+		else{			
+			createFire();			
+		}		
+	}
+	
+	void spreadFire(){
+		int x = -1;
+		int y = -1;	
+		for(int i = 0; i < GWidth; i++){
+			for(int j = 0; j < GHeight; j++){
+				if(model.hasObject(FIRE, i, j)){
+					x = i;
+					y = j;					
+					break;
+				}
+			}
+		}		
+		if(y == -1){
+			return;
+		}
+		else{
+			if(y != GHeight - 1){				
+				if(model.hasObject(PLANT, x, y + 1) || model.hasObject(WEED, x, y + 1)){
+					createFireWithProbability(x, y + 1);
+					return;					
+				}				
+			}
+			else if(y != 0){				
+				if(model.hasObject(PLANT, x, y - 1) || model.hasObject(WEED, x, y - 1)){
+					createFireWithProbability(x, y - 1);
+					return;
+				}				
+			}
+			else if(x != GWidth - 1){				
+				if(model.hasObject(PLANT, x + 1, y) || model.hasObject(WEED, x + 1, y)){
+					createFireWithProbability(x + 1, y);
+					return;
+				}				
+			}
+			else if(x != 0){				
+				if(model.hasObject(PLANT, x - 1, y) || model.hasObject(WEED, x - 1, y)){
+					createFireWithProbability(x - 1, y);
+					return;
+				}				
+			}
+		}							
+	}
+	
+	void createFireWithProbability(int x, int y){
+		Random rand = new Random();
+		//probability of spreading is 1/5
+		boolean val = rand.nextInt(5) == 0;
+		if(val){			
+			model.add(FIRE, x, y);
+			System.out.println("Fire spread to: " + x + ", " + y);
+		}
+	}
 	
     /** Called before the end of MAS execution */
     @Override

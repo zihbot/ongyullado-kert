@@ -1,12 +1,12 @@
-// Agent sprinkler in project garden.mas2j
-
-/* Initial beliefs and rules */
-
-/* Initial goals */
-
-/* Plans */
-
-+water(X,Y) : true
+// Agent sprinkler in project garden.mas2j
+/* Initial beliefs and rules */
+/* Initial goals */
+/* Plans */
++water : true
 	<- watering;
-	-water(X,Y)[source(_)].
+	-water[source(_)].
+	
++extinguish : true
+	<- extinguish;
+	-extinguish[source(_)].
 
