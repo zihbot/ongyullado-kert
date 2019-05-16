@@ -66,13 +66,13 @@ public class GardenEnv extends Environment {
 				}
 			}
 		}, 15 * 1000, 15 * 1000);	
-		//every 10 seconds try to spread fire
+		//every 1 seconds try to spread fire
 		timer.scheduleAtFixedRate(new TimerTask(){
 			@Override
 			public void run(){								
 				spreadFire();							
 			}
-		}, 10 * 1000, 10 * 1000);	
+		}, 1 * 1000, 1 * 1000);	
     }
 	private void setup(){		
 		frame = new JFrame("Garden controller");
@@ -503,7 +503,7 @@ public class GardenEnv extends Environment {
 	void createFireWithProbability(int x, int y){
 		Random rand = new Random();
 		//probability of spreading is 1/5
-		boolean val = rand.nextInt(5) == 0;
+		boolean val = rand.nextInt(2) == 0;
 		if(val){		
 			if(model.hasObject(PLANT, x, y)){
 				model.remove(PLANT, x, y);
