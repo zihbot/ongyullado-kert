@@ -140,6 +140,7 @@ public class GardenEnv extends Environment {
 			//setAgPos(0, 0, 0);
 			//initial locations of agents
 			setAgPos(PLANTER, 3, 2);
+			addPercept(Literal.parseLiteral("pos(planter,3,2)"));
 			setAgPos(WEEDERS, 0, 0);
 			//Sprinkler has to start from (0,0)!
 			setAgPos(SPRINKLER, 0, 0);
