@@ -218,6 +218,7 @@ public class GardenEnv extends Environment {
 				model.add(PLANT, pp.x, pp.y);       
 				updatePercepts();      
 			}
+			
 			if (action.getFunctor().equals("discover")) {
 				int x = (int)((NumberTerm)action.getTerm(0)).solve();
 				int y = (int)((NumberTerm)action.getTerm(1)).solve();
@@ -355,7 +356,7 @@ public class GardenEnv extends Environment {
 				if(!hasFire){
 					addPercept(Literal.parseLiteral("cleanAfterFire"));								
 				}
-				updatePercepts();      
+				//updatePercepts();      
 			}
 			if(action.getFunctor().equals("cleaning")){
 				//this comes after the sprinkler stepped on every field --> that results the weeders agent to disappear (hide)
