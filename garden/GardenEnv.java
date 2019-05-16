@@ -37,8 +37,6 @@ public class GardenEnv extends Environment {
 	private GardenModel model;
 	private GardenView view;
 	private JFrame frame;	
-	private JLabel temperatureLabel;
-	private int temperature;	
 	private Logger logger = Logger.getLogger("garden.mas2j."+GardenEnv.class.getName());
 
     /** Called before the MAS execution with the args informed in .mas2j */
@@ -99,13 +97,9 @@ public class GardenEnv extends Environment {
 				addPercept(Literal.parseLiteral("needWatering"));
 			}
 		});				
-		//TODO: temperature = getTemperature(); --> other method to periodically refresh the variable & text in the temperatureLabel
-		temperature = 0;
-		temperatureLabel = new JLabel("Temperature: " + temperature);	
 		frame.add(fire);
 		frame.add(plant);
 		frame.add(sprinkle);
-		frame.add(temperatureLabel);
 		frame.pack();
 		frame.setVisible(true);
 	}
