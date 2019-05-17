@@ -49,7 +49,7 @@ public class GardenEnv extends Environment {
 		setup();		
 		timer = new Timer();
 		//every 15 seconds the observer searches for weed
-		//every 15 seconds there is a 1/5 probability of new weed
+		//every 15 seconds new weed grows with 1/4 probability
 		timer.scheduleAtFixedRate(new TimerTask(){
 			@Override
 			public void run(){	
@@ -58,19 +58,19 @@ public class GardenEnv extends Environment {
 					addPercept(Literal.parseLiteral("needWeedSearch"));
 				}										
 				Random rand = new Random();
-				boolean val = rand.nextInt(5) == 0;
+				boolean val = rand.nextInt(4) == 0;
 				if(val){
 					createWeed();
 				}
 			}
 		}, 15 * 1000, 15 * 1000);	
-		//every 1 seconds try to spread fire
+		//every 2 seconds the fire spreads with a 1/3 probability
 		timer.scheduleAtFixedRate(new TimerTask(){
 			@Override
 			public void run(){								
 				spreadFire();							
 			}
-		}, 1 * 1000, 1 * 1000);	
+		}, 2 * 1000, 2 * 1000);	
     }
 	private void setup(){		
 		frame = new JFrame("Garden controller");
@@ -130,8 +130,7 @@ public class GardenEnv extends Environment {
 	
 	class GardenModel extends GridWorldModel{
 		private GardenModel(){			
-			super(GWidth, GHeight, 4);			
-			//setAgPos(0, 0, 0);
+			super(GWidth, GHeight, 4);						
 			//initial locations of agents
 			setAgPos(PLANTER, 3, 2);
 			addPercept(Literal.parseLiteral("pos(planter,3,2)"));
@@ -269,7 +268,6 @@ public class GardenEnv extends Environment {
 				int startY = pp.y;								
 				//steps to the weed
 				//without this, the weeders would teleport
-				//the agent can step over other agents --> if planter steps down --> weeders will make it disappear!!
 				boolean finished = false;
 				while(!finished){	
 					try {
@@ -350,12 +348,9 @@ public class GardenEnv extends Environment {
 				}
 				if(!hasFire){
 					addPercept(Literal.parseLiteral("cleanAfterFire"));								
-				}
-				//updatePercepts();      
+				}				   
 			}
-			if(action.getFunctor().equals("cleaning")){
-				//this comes after the sprinkler stepped on every field --> that results the weeders agent to disappear (hide)
-				//so instead of route finding, weeders go back to the start position, and steps on every field				
+			if(action.getFunctor().equals("cleaning")){					
 				model.setAgPos(WEEDERS, 0, 0);
 				for(int i = 0; i < GWidth; i++){
 					for(int j = 0; j < GHeight; j++){
@@ -496,8 +491,8 @@ public class GardenEnv extends Environment {
 	
 	void createFireWithProbability(int x, int y){
 		Random rand = new Random();
-		//probability of spreading is 1/5
-		boolean val = rand.nextInt(2) == 0;
+		//probability of spreading is 1/3
+		boolean val = rand.nextInt(3) == 0;
 		if(val){		
 			if(model.hasObject(PLANT, x, y)){
 				model.remove(PLANT, x, y);
